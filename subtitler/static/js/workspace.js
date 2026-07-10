@@ -11,6 +11,8 @@ let edVideoEl = null; // editor tab video
 let pendingIn = null; // clip in-point staged by 'I'
 let selectedLineId = null;
 let selectedImageId = null; // I2-11
+let overlayDragging = false; // I2-13: true between overlay pointerdown and pointerup/cancel
+let lastOverlayRenderKey = null; // I2-13: skip redundant overlay DOM writes when nothing changed
 let saveTimer = null;
 let styleSaveTimer = null;
 
@@ -171,6 +173,10 @@ let debugInterval = null;
 function showTab(name) {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.tab === name));
   document.querySelectorAll("[data-panel]").forEach((p) => (p.style.display = p.dataset.panel === name ? "block" : "none"));
+  // I2-12: switching tabs must not leave the previous tab's video playing —
+  // pause both unconditionally (pausing an already-paused video is a no-op).
+  if (videoEl) videoEl.pause();
+  if (edVideoEl) edVideoEl.pause();
   currentTab = name;
   const sidebar = document.getElementById("shortcut-sidebar");
   const layout = document.querySelector(".workspace-layout");
@@ -603,6 +609,7 @@ async function setupEditorTab() {
   bindImageRowEvents();
   renderImageOverlays();
 
+  document.getElementById("new-line-btn").addEventListener("click", createNewLineAtPlayhead);
   document.getElementById("split-btn").addEventListener("click", splitAtPlayhead);
   document.getElementById("merge-btn").addEventListener("click", mergeWithNext);
   document.getElementById("insert-btn").addEventListener("click", insertAfter);
@@ -743,6 +750,7 @@ function setupOverlayDrag() {
   overlay.addEventListener("pointerdown", (e) => {
     if (!overlay.dataset.lineId) return;
     dragging = true;
+    overlayDragging = true; // I2-13: updateOverlay() must not fight the drag while this is true
     altDrag = e.altKey;
     pushedForDrag = false;
     overlay.classList.add("dragging");
@@ -781,7 +789,10 @@ function setupOverlayDrag() {
     if (!dragging) return;
     dragging = false;
     overlay.classList.remove("dragging");
-    if (overlay.dataset.dragPosX === undefined) return;
+    if (overlay.dataset.dragPosX === undefined) {
+      overlayDragging = false;
+      return;
+    }
     const posX = parseFloat(overlay.dataset.dragPosX);
     const posY = parseFloat(overlay.dataset.dragPosY);
     delete overlay.dataset.dragPosX;
@@ -801,6 +812,8 @@ function setupOverlayDrag() {
       syncStylePanelFromProject();
       scheduleStyleSave();
     }
+    overlayDragging = false;
+    lastOverlayRenderKey = null; // force a fresh render — the drag applied the same css props, but the cache doesn't know that
     updateOverlay();
   };
   overlay.addEventListener("pointerup", finishDrag);
@@ -1055,44 +1068,66 @@ function effectiveStyle(line) {
   };
 }
 
+// I2-13: builds the stacked stroke+fill markup for one text line, using the
+// duplicated-layer technique instead of a 4-direction text-shadow (which
+// leaves gaps at diagonal glyph edges). Stroke width is 2x the configured
+// outline width because -webkit-text-stroke is centered on the glyph edge —
+// the front fill layer covers the inner half, leaving the outer half as the
+// visible outline.
+function strokeFillSpan(cls, text, fontpx, color, outlinePx, outlineColor, fontFamily) {
+  const strokeW = Math.max(0, outlinePx * 2);
+  const fontStyle = fontFamily ? `font-family:'${escapeHtml(fontFamily)}';` : "";
+  return (
+    `<span class="sub-line ${cls}" style="font-size:${fontpx}px; ${fontStyle}">` +
+    `<span class="stroke" aria-hidden="true" style="-webkit-text-stroke:${strokeW}px ${outlineColor}; color:${outlineColor};">${escapeHtml(text)}</span>` +
+    `<span class="fill" style="color:${color};">${escapeHtml(text)}</span>` +
+    `</span>`
+  );
+}
+
 function updateOverlay() {
   if (!edVideoEl) return;
+  if (overlayDragging) return; // I2-13: the drag handler owns position + content until pointerup
   const t = edVideoEl.currentTime;
   const overlay = document.getElementById("sub-overlay");
   if (!overlay) return;
   const line = project.lines.find((l) => t >= l.start && t < l.end);
 
-  overlay.style.left = "";
-  overlay.style.bottom = "";
-  overlay.style.transform = "";
-
   if (!line) {
+    if (lastOverlayRenderKey === null) return; // already empty — nothing to do
+    lastOverlayRenderKey = null;
+    overlay.style.left = "";
+    overlay.style.bottom = "";
+    overlay.style.transform = "";
     overlay.innerHTML = "";
     overlay.classList.remove("top", "custom-pos", "has-line");
     delete overlay.dataset.lineId;
     return;
   }
 
+  const eff = effectiveStyle(line);
+  const key = JSON.stringify([line.id, line.text_tgt, line.text_src, project.style.bilingual, eff]);
+  if (key === lastOverlayRenderKey) return; // I2-13: identical to what's already on screen — skip the DOM write
+  lastOverlayRenderKey = key;
+
   overlay.dataset.lineId = line.id;
   overlay.classList.add("has-line");
-  const eff = effectiveStyle(line);
 
   const videoH = edVideoEl.clientHeight || 300;
   const fontpx = Math.round((eff.size * videoH) / 1080);
-  const outlinePx = Math.max(1, Math.round((eff.outline_width * videoH) / 1080));
-  const shadow = [
-    `${outlinePx}px ${outlinePx}px 0 ${eff.outline_color}`,
-    `-${outlinePx}px ${outlinePx}px 0 ${eff.outline_color}`,
-    `${outlinePx}px -${outlinePx}px 0 ${eff.outline_color}`,
-    `-${outlinePx}px -${outlinePx}px 0 ${eff.outline_color}`,
-  ].join(", ");
+  const outlinePx = Math.max(0, Math.round((eff.outline_width * videoH) / 1080));
 
-  let html = `<span class="zh" style="font-size:${fontpx}px; font-family:'${escapeHtml(eff.font)}'; color:${eff.color}; text-shadow:${shadow};">${escapeHtml(line.text_tgt)}</span>`;
+  let html = strokeFillSpan("zh", line.text_tgt, fontpx, eff.color, outlinePx, eff.outline_color, eff.font);
   if (project.style.bilingual) {
-    html += `<span class="ja" style="font-size:${Math.round(fontpx * 0.6)}px; text-shadow:${shadow};">${escapeHtml(line.text_src)}</span>`;
+    // ja row keeps its own muted tone (matches the pre-existing look) rather
+    // than the (possibly per-line-overridden) target-text color.
+    html += strokeFillSpan("ja", line.text_src, Math.round(fontpx * 0.6), "#E8D9C4", outlinePx, eff.outline_color);
   }
   overlay.innerHTML = html;
 
+  overlay.style.left = "";
+  overlay.style.bottom = "";
+  overlay.style.transform = "";
   if (eff.pos_x != null && eff.pos_y != null) {
     overlay.classList.remove("top");
     overlay.classList.add("custom-pos");
@@ -1316,6 +1351,34 @@ function mergeWithNext() {
   scheduleAutosave();
 }
 
+// I2-12: "N" / "+ New line at playhead" — creates a blank 1.5s line at the
+// playhead (or right after the covering line if the playhead already sits
+// inside one), clamped so it never overlaps the next line's start. Works
+// with zero existing lines (does not rely on currentLine()/selection).
+function createNewLineAtPlayhead() {
+  if (!edVideoEl) return;
+  const t = edVideoEl.currentTime;
+  const covering = project.lines.find((l) => t >= l.start && t < l.end);
+  const start = covering ? covering.end : t;
+  const next = project.lines
+    .filter((l) => l.start > start)
+    .sort((a, b) => a.start - b.start)[0];
+  let end = start + 1.5;
+  if (next && end > next.start) end = next.start;
+  if (end <= start) end = start + 0.05; // squeezed extremely tight — still a valid (tiny) line
+
+  pushUndo();
+  const newLine = { id: crypto.randomUUID().slice(0, 8), start, end, text_tgt: "", text_src: "", style: null };
+  let idx = project.lines.findIndex((l) => l.start > start);
+  if (idx === -1) idx = project.lines.length;
+  project.lines.splice(idx, 0, newLine);
+  renderLinesTable();
+  selectLine(newLine.id);
+  scheduleAutosave();
+  const tgtEl = document.getElementById("ed-text-tgt");
+  if (tgtEl) tgtEl.focus();
+}
+
 function insertAfter() {
   const line = currentLine();
   if (!line) return;
@@ -1472,6 +1535,11 @@ function onEditorKeydown(e) {
     case " ":
       e.preventDefault();
       edVideoEl.paused ? edVideoEl.play() : edVideoEl.pause();
+      break;
+    case "n":
+    case "N":
+      e.preventDefault();
+      createNewLineAtPlayhead();
       break;
     case "[":
       if (line) {

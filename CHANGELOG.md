@@ -4,6 +4,38 @@ All notable changes to the Subtitler app. Each entry names the panel it applies 
 **01 Clips**, **02 Editor**, **03 Export**, **Debug**, **Home** (project list / import screen),
 **Settings**, or **Backend** (pipeline / server, no visible UI).
 
+## v0.2.4 — 2026-07-10 (editor patch)
+
+### Bug fixes
+
+- **01 Clips / 02 Editor** — Switching between the Clips and Editor tabs left the previous
+  tab's video playing in the background. `showTab()` now pauses both video elements
+  unconditionally on every switch — no auto-resume.
+- **02 Editor** — Dragging the subtitle overlay on the video intermittently glitched/jumped
+  by a few pixels for a few frames. Cause: `updateOverlay()` runs on both a 100 ms interval
+  and video `timeupdate`, and was rebuilding the overlay's innerHTML and re-applying its
+  saved position *while* the drag handler was writing live positions — the two fought each
+  other. `updateOverlay()` now no-ops entirely while a drag is in progress, and separately
+  skips its DOM write whenever the line/text/style/position state hasn't changed since the
+  last render, removing incidental flicker and text-selection loss too. The drag and the
+  overlay renderer now also write position through the identical `left`/`bottom`/`transform`
+  properties, so there's no unit-mismatch jump on drop.
+- **02 Editor** — The subtitle outline previously faked itself with a 4-direction
+  `text-shadow`, leaving visible gaps at diagonal glyph edges. Replaced with a proper stroke
+  using a duplicated-layer technique (a back copy drawn with `-webkit-text-stroke`, a front
+  fill copy on top), which fully surrounds glyphs including diagonals, respects per-line
+  outline-color overrides, and applies identically in positioned, default bottom/top, and
+  bilingual modes. Preview-only — export already uses libass's real outline rendering.
+
+### New features
+
+- **02 Editor** — New **"+ New line at playhead"** chip (and `N` shortcut) creates a blank
+  1.5 s line at the video playhead — no existing selection required, and it works even when
+  the project has zero lines. If the playhead already sits inside a line, the new line is
+  inserted immediately after that line's end instead. Duration is clamped so it never
+  overlaps the next line's start. The new line is inserted at the correct chronological
+  position, selected, and its translation field is focused so typing can start immediately.
+
 ## v0.2.3 — 2026-07-10 (double-click launcher)
 
 ### New features

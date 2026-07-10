@@ -205,13 +205,20 @@ table.grid input.cell-edit { width: 100%; border: 1px solid var(--orange); }
 .field-inline { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-2); }
 .field-inline .fval { padding: 4px 6px; font-size: 12px; }
 
-.sub-overlay { position: absolute; left: 0; right: 0; bottom: 6%; text-align: center; padding: 0 4%; pointer-events: none; }
+.sub-overlay { position: absolute; left: 0; right: 0; bottom: 6%; text-align: center; padding: 0 4%; pointer-events: none; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
 .sub-overlay.has-line { pointer-events: auto; cursor: grab; }
 .sub-overlay.top { bottom: auto; top: 6%; }
 .sub-overlay.custom-pos { bottom: auto; top: auto; right: auto; text-align: center; padding: 0; width: auto; transform: translateX(-50%); }
 .sub-overlay.dragging { cursor: grabbing; opacity: 0.85; }
-.sub-overlay .zh { display: inline-block; color: #FFFFFF; font-weight: 600; text-shadow: 0 0 4px #000, 0 1px 2px #000; letter-spacing: 0.02em; }
-.sub-overlay .ja { display: block; color: #E8D9C4; margin-top: 2px; text-shadow: 0 0 4px #000; }
+
+/* I2-13: duplicated-layer stroke technique — a back "stroke" copy drawn with
+   -webkit-text-stroke (which is centered on the glyph edge, so it covers
+   diagonals too, unlike a 4-direction text-shadow) plus a front "fill" copy
+   in the true text color, covering the inner half of the stroke. */
+.sub-overlay .sub-line { position: relative; display: inline-block; font-weight: 600; letter-spacing: 0.02em; white-space: pre-wrap; }
+.sub-overlay .sub-line.ja { display: block; margin-top: 2px; }
+.sub-overlay .sub-line .stroke { position: absolute; inset: 0; z-index: 0; white-space: inherit; }
+.sub-overlay .sub-line .fill { position: relative; z-index: 1; }
 
 /* image overlays (I2-11) */
 .img-overlay { position: absolute; cursor: grab; border: 1px solid transparent; }
