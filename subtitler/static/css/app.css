@@ -72,9 +72,9 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .shortcut-sidebar { position: sticky; top: 16px; align-self: start; border: 1px solid var(--hair); background: var(--surface); padding: 14px; }
 .shortcut-sidebar .keys-lab { margin: 0 0 8px; }
 .shortcut-sidebar .shortcut-block + .shortcut-block { margin-top: 16px; }
-.keys-sidebar { display: block; border-bottom: 1px solid var(--hair); margin-top: 0; }
+.keys.keys-sidebar { display: block; border: 1px solid var(--hair); margin-top: 0; }
 .keys-sidebar .key-item { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; align-items: start; border-right: 0; padding: 9px 10px; line-height: 1.35; }
-.key-combo { display: flex; justify-content: flex-end; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; }
+.key-combo { display: flex; justify-content: flex-start; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; }
 .key-combo > span { color: var(--ink-2); font-size: 11px; }
 @media (max-width: 1360px) {
   .workspace-page { max-width: 1180px; }
