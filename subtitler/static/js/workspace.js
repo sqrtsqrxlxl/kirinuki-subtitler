@@ -172,6 +172,14 @@ function showTab(name) {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.tab === name));
   document.querySelectorAll("[data-panel]").forEach((p) => (p.style.display = p.dataset.panel === name ? "block" : "none"));
   currentTab = name;
+  const sidebar = document.getElementById("shortcut-sidebar");
+  const layout = document.querySelector(".workspace-layout");
+  if (sidebar && layout) {
+    const showSidebar = name === "clips" || name === "editor";
+    sidebar.hidden = !showSidebar;
+    layout.classList.toggle("shortcut-sidebar-hidden", !showSidebar);
+    document.querySelectorAll("[data-keys-for]").forEach((b) => (b.hidden = b.dataset.keysFor !== name));
+  }
   if (name === "debug") {
     const body = document.querySelector('[data-panel="debug"] .c-body');
     refreshDebugConsole(PROJECT_ID, body);

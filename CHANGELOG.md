@@ -4,6 +4,16 @@ All notable changes to the Subtitler app. Each entry names the panel it applies 
 **01 Clips**, **02 Editor**, **03 Export**, **Debug**, **Home** (project list / import screen),
 **Settings**, or **Backend** (pipeline / server, no visible UI).
 
+## v0.2.2 — 2026-07-10 (shortcut-sidebar layout)
+
+### New features
+
+- **01 Clips / 02 Editor** — The keyboard-shortcut legend now sits in a distinct, sticky left
+  appendix rather than inside the workspace frame. It preserves the frame's original structure,
+  aligns its key and description columns, swaps its content for the active tab, and disappears
+  entirely on Export/Debug. On narrow screens it moves below the workspace so editing remains
+  usable.
+
 ## v0.2.1 — 2026-07-10 (Clips-panel patch)
 
 ### Bug fixes

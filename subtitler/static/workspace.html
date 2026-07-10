@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="/static/css/app.css">
 </head>
 <body>
-<div class="page">
+<div class="page workspace-page">
   <header class="mast">
     <a href="/static/index.html" style="text-decoration:none; color: inherit;"><span class="wordmark">SUBTITLER<i>.</i></span></a>
     <a href="/static/index.html" class="home-link">← Home</a>
@@ -18,7 +18,39 @@
   </header>
   <div class="sunset-band"><span></span><span></span><span></span><span></span></div>
 
-  <div class="frame">
+  <div class="workspace-layout">
+    <aside class="shortcut-sidebar" id="shortcut-sidebar" aria-label="Keyboard shortcuts">
+    <div class="shortcut-block" data-keys-for="clips">
+      <p class="eyebrow keys-lab">Keyboard — clips</p>
+      <div class="keys keys-sidebar">
+        <span class="key-item"><span class="key-combo"><kbd>I</kbd></span><span>clip in-point at playhead</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>O</kbd></span><span>clip out-point · commits clip</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>Space</kbd></span><span>play / pause</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>J</kbd><span>/</span><kbd>L</kbd></span><span>jump −5 s / +5 s</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>Q</kbd></span><span>play the 3 s before playhead</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>W</kbd></span><span>play the 3 s after playhead</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>Esc</kbd></span><span>cancel staged in-point</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>←</kbd><span>/</span><kbd>→</kbd></span><span>pan timeline</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>Right-drag</kbd></span><span>pan timeline (mouse)</span></span>
+      </div>
+    </div>
+    <div class="shortcut-block" data-keys-for="editor" hidden>
+      <p class="eyebrow keys-lab">Keyboard — editor</p>
+      <div class="keys keys-sidebar">
+        <span class="key-item"><span class="key-combo"><kbd>[</kbd></span><span>line start = playhead</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>]</kbd></span><span>line end = playhead</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>Enter</kbd></span><span>commit → next line</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>Space</kbd></span><span>play / pause</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>Q</kbd></span><span>play 3 s before this line</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>W</kbd></span><span>play from this line onward</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>R</kbd></span><span>replay current line</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>↑</kbd><span>/</span><kbd>↓</kbd></span><span>previous / next line</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>+</kbd><span>/</span><kbd>−</kbd></span><span>zoom waveform in / out</span></span>
+        <span class="key-item"><span class="key-combo"><kbd>Ctrl+Z</kbd></span><span>undo · <kbd>Ctrl+Y</kbd> redo</span></span>
+      </div>
+    </div>
+    </aside>
+    <div class="frame">
     <div class="tabs" id="tabs">
       <button class="tab" data-tab="clips">01 Clips</button>
       <button class="tab" data-tab="editor">02 Editor</button>
@@ -55,19 +87,6 @@
         </div>
         <div class="track" id="track"></div>
         <div class="tc-row"><span id="tc-0">00:00:00</span><span id="tc-mid">--</span><span id="tc-end">--</span></div>
-      </div>
-
-      <p class="eyebrow keys-lab">Keyboard — mark clips without touching the mouse</p>
-      <div class="keys">
-        <span class="key-item"><kbd>I</kbd> clip in-point at playhead</span>
-        <span class="key-item"><kbd>O</kbd> clip out-point · commits clip</span>
-        <span class="key-item"><kbd>Space</kbd> play / pause</span>
-        <span class="key-item"><kbd>J</kbd> / <kbd>L</kbd> jump −5 s / +5 s</span>
-        <span class="key-item"><kbd>Q</kbd> play the 3 s before playhead</span>
-        <span class="key-item"><kbd>W</kbd> play the 3 s after playhead</span>
-        <span class="key-item"><kbd>Esc</kbd> cancel staged in-point</span>
-        <span class="key-item"><kbd>←</kbd> / <kbd>→</kbd> pan timeline</span>
-        <span class="key-item"><kbd>Right-drag</kbd> pan timeline (mouse)</span>
       </div>
 
       <table class="grid" id="clips-table">
@@ -192,20 +211,6 @@
       </div>
       <div class="waveband" id="ed-track"></div>
 
-      <p class="eyebrow keys-lab">Keyboard — time every line without the mouse</p>
-      <div class="keys">
-        <span class="key-item"><kbd>[</kbd> line start = playhead</span>
-        <span class="key-item"><kbd>]</kbd> line end = playhead</span>
-        <span class="key-item"><kbd>Enter</kbd> commit → next line</span>
-        <span class="key-item"><kbd>Space</kbd> play / pause</span>
-        <span class="key-item"><kbd>Q</kbd> play 3 s before this line</span>
-        <span class="key-item"><kbd>W</kbd> play from this line onward</span>
-        <span class="key-item"><kbd>R</kbd> replay current line</span>
-        <span class="key-item"><kbd>↑</kbd> / <kbd>↓</kbd> previous / next line</span>
-        <span class="key-item"><kbd>+</kbd> / <kbd>−</kbd> zoom waveform in / out</span>
-        <span class="key-item"><kbd>Ctrl+Z</kbd> undo · <kbd>Ctrl+Y</kbd> redo</span>
-      </div>
-
       <table class="grid" id="lines-table">
         <tr><th>#</th><th>Start</th><th>End</th><th>CPS</th><th id="col-tgt">Translation</th><th id="col-src">Original</th></tr>
       </table>
@@ -270,6 +275,7 @@
         </div>
         <div class="c-body"></div>
       </div>
+    </div>
     </div>
   </div>
 </div>
