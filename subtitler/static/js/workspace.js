@@ -212,20 +212,30 @@ function showTab(name) {
   // recompute. WaveSurfer.setOptions({}) merges in no new options but does
   // call the renderer's reRender(), which is the one documented way (short
   // of destroying/recreating the instance) to force a fresh layout+paint
-  // pass. Only needs to run once per instance, the first time its tab is
-  // actually shown with a real (non-zero) container size.
-  if (name === "editor" && edWs && !edWsRendered) {
-    edWs.setOptions({});
-    edWsRendered = true;
+  // pass. v0.2.6: the v0.2.5 once-per-instance guard had a residual race —
+  // if the first tab-show happened BEFORE audio decode finished, the forced
+  // redraw painted nothing and the flag blocked every retry. Now: re-render
+  // on EVERY show of the tab (idempotent, cheap), and each instance also
+  // re-renders on its own 'decode' event (forceRenderOnDecode) so whichever
+  // happens last — decode or visibility — triggers the paint.
+  if (name === "editor" && edWs) {
+    try { edWs.setOptions({}); } catch (e) { /* not decoded yet — decode handler will paint */ }
   }
-  if (name === "clips" && ws && !wsRendered) {
-    ws.setOptions({});
-    wsRendered = true;
+  if (name === "clips" && ws) {
+    try { ws.setOptions({}); } catch (e) { /* not decoded yet — decode handler will paint */ }
   }
 }
 let currentTab = "clips";
-let wsRendered = false;
-let edWsRendered = false;
+
+// v0.2.6: whichever comes last — audio decode or the tab becoming visible —
+// must trigger the paint. showTab() covers visibility; this covers decode.
+function forceRenderOnDecode(inst, tabName) {
+  inst.on("decode", () => {
+    if (currentTab === tabName) {
+      try { inst.setOptions({}); } catch (e) { /* ignore */ }
+    }
+  });
+}
 
 // ============================================ shared waveform helpers ===
 // I2-3: smooth cursor tracking while the video plays (timeupdate alone is
@@ -350,6 +360,7 @@ async function setupClipsTab() {
   });
 
   startCursorSync(videoEl, ws);
+  forceRenderOnDecode(ws, "clips");
   setupZoomControls("clips", ws, "#track");
   setupPanControls(ws, "#track");
 
@@ -604,6 +615,7 @@ async function setupEditorTab() {
   });
 
   startCursorSync(edVideoEl, edWs);
+  forceRenderOnDecode(edWs, "editor");
   setupZoomControls("editor", edWs, "#ed-track");
   setupPanControls(edWs, "#ed-track");
   setupSpectrogramToggle();

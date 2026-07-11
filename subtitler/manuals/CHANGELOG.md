@@ -4,7 +4,26 @@ All notable changes to the Subtitler app. Each entry names the panel it applies 
 **01 Clips**, **02 Editor**, **03 Export**, **Debug**, **Home** (project list / import screen),
 **Settings**, or **Backend** (pipeline / server, no visible UI).
 
-## v0.2.5 — 2026-07-10 (pending confirmation)
+## v0.2.6 — 2026-07-11 (waveform reliability + repo tidy)
+
+### Bug fixes
+
+- **01 Clips / 02 Editor** — The waveform could still intermittently render nothing on page
+  load. The v0.2.5 fix forced a redraw the first time a tab was shown, but guarded it with a
+  once-per-instance flag — so if that first show happened *before* the audio finished
+  decoding, the redraw painted nothing and the flag blocked every retry. Now the redraw runs
+  on every tab show (idempotent) AND on each instance's own `decode` event, so whichever
+  happens last — decode or visibility — triggers the paint.
+
+### Changed
+
+- **Repo** — Planning docs moved out of the repo root: `CHANGELOG.md`, `BACKLOG.md`,
+  `ROADMAP.md` now live in `subtitler/manuals/`; the project workflow guide lives at
+  `subtitler/CLAUDE.md` (a one-line pointer stays at the repo root so Claude Code still
+  auto-loads it). The **Speakers** feature (iteration 3) lives on the `nightly` branch,
+  keeping `main` focused on the smallest shippable product.
+
+## v0.2.5 — 2026-07-10 (waveform render fix, editor pan, style rail)
 
 ### Bug fixes
 
